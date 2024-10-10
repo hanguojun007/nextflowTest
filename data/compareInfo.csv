@@ -1,2 +1,3 @@
 Compare,Method
 B_vs_A,paired_t-test
+A_vs_B,paired_t-test
