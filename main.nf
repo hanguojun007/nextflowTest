@@ -4,19 +4,13 @@
 params.exprMatrixFile = "$baseDir/data/exprMatrix.csv"
 params.sampleInfoFile = "$baseDir/data/sampleInfo.csv"
 params.compareInfoFile = "$baseDir/data/compareInfo.csv"
-params.outdir = "/home/hgj/UbuntuData/NextFlow/Result"
-params.plotdir = "/home/hgj/UbuntuData/NextFlow/Result/Plot"
+params.outdir = "Result"
+params.plotdir = "Result/Plot"
 params.log = "log.txt"
 
-// 解析比较组信息的函数
-def parseCompareInfo(file) {
-    def content = new File(file).getText().trim()
-    def rows = content.split("\n").drop(1) // 跳过表头
-    return rows.collect { it.split(",")[0] } // 假设第一列是比较组名
-}
 
 process diffAnalysis {
-    beforeScript 'echo start'
+    beforeScript "mkdir -p ${params.outdir}"
     afterScript 'echo end'
     cache true
     publishDir path: "${params.outdir}", mode: "copy", overwrite: true
@@ -27,7 +21,7 @@ process diffAnalysis {
     path compareInfo
 
     output:
-    path "_*_diff.csv"
+    path "_*_diff.csv"  // 多个文件输出，后续调用使用flatten
 
     script:
     """
@@ -55,7 +49,7 @@ process drawBoxPlot {
     script:
     """
     Rscript $baseDir/module/boxplot.R \
-    --diffFile ${diffFile} \
+    --diffFile "${diffFile}" \
     --sampleInfoFile ${sampleInfo} \
     --logFile ${params.log}
     """
@@ -63,13 +57,16 @@ process drawBoxPlot {
 
 workflow {
     // 调用 diffAnalysis 进程，收集结果
-    def diffResults = diffAnalysis(params.exprMatrixFile, params.sampleInfoFile, params.compareInfoFile)
+    diffResults = diffAnalysis(params.exprMatrixFile, params.sampleInfoFile, params.compareInfoFile)
 
-    // 读取并解析比较组信息
-    def compareList = parseCompareInfo(params.compareInfoFile)
+    // 生成 compareGroups 通道
+    compareGroups = diffResults
+        .flatten()
+        .map { file ->
+            def match = file.name =~ /_(.*)_diff\.csv/
+            return match ? match[0][1] : null // 提取比较组名
+        }
+        .filter { it != null } // 过滤掉可能的 null 值
 
-    // 使用 each 逐个调用 drawBoxPlot，确保每个进程调用唯一
-    compareList.map { compareGroup ->
-        drawBoxPlot(compareGroup, "${params.outdir}/_${compareGroup}_diff.csv", params.sampleInfoFile)
-    }
+    drawBoxPlot(compareGroups, diffResults.flatten(), params.sampleInfoFile)
 }
