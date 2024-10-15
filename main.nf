@@ -7,7 +7,7 @@ params.compareInfoFile = "$baseDir/data/compareInfo.csv"
 params.outdir = "./Result"
 params.plotdir = "./Result/Plot"
 params.log = "log.txt"
-params.test = 1
+params.test = 0
 
 
 include { diffAnalysis } from './module/diffAnalysis'

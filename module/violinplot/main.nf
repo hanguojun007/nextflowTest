@@ -2,7 +2,7 @@ params.plotdir = "Result/Plot"
 
 process drawViolinPlot {
     beforeScript "mkdir -p ${params.plotdir}/${compareGroup}/violinplot"
-    cache false
+    cache true
     publishDir path: "${params.plotdir}/${compareGroup}/violinplot", mode: "copy", overwrite: true
 
     input:
