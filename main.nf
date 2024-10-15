@@ -7,10 +7,12 @@ params.compareInfoFile = "$baseDir/data/compareInfo.csv"
 params.outdir = "./Result"
 params.plotdir = "./Result/Plot"
 params.log = "log.txt"
+params.test = 1
 
 
 include { diffAnalysis } from './module/diffAnalysis'
 include { drawBoxPlot } from './module/boxplot'
+include { drawViolinPlot } from './module/violinplot'
 
 workflow {
     // 调用 diffAnalysis 进程，收集结果
@@ -26,4 +28,5 @@ workflow {
         .filter { it != null } // 过滤掉可能的 null 值
 
     drawBoxPlot(compareGroups, diffResults.flatten(), params.sampleInfoFile)
+    drawViolinPlot(compareGroups, diffResults.flatten(), params.sampleInfoFile, params.test)
 }
